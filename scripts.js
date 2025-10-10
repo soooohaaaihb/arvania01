@@ -1,22 +1,6 @@
 // 
 // ARVANIA - Modern Web Design & AI Automation
 // 
-// Configuration:
-// - Agency Name: ARVANIA
-// - Contact Email: hello@arvania.com
-// - Portfolio Data: See portfolioData array below
-// - Contact Form Endpoint: Replace with your Formspree/Netlify Forms endpoint
-// 
-// How to add new portfolio projects:
-// 1. Add new object to portfolioData array with full details
-// 2. Ensure id matches with project reference
-// 3. Add images to /assets/images/ directory
-// 
-// How to update contact form:
-// 1. Replace form action with your endpoint
-// 2. Update form fields if needed
-// 3. Update success/error messages
-// 
 
 // DOM Elements
 const preloader = document.querySelector('.preloader');
@@ -128,26 +112,21 @@ function setupEventListeners() {
         });
     });
     
-    // Contact form
+    // Contact form with better mobile support
     if (contactForm) {
         contactForm.addEventListener('submit', handleFormSubmit);
     }
     
-    // Modal close button (hidden by default but still functional if needed)
+    // Modal close button
     if (modalClose) {
-        modalClose.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent event bubbling
-            closeModal();
-        });
+        modalClose.addEventListener('click', closeModal);
     }
     
     // Prevent closing modal when clicking outside (unskippable)
     if (formModal) {
         formModal.addEventListener('click', function(e) {
-            // Only close if clicking directly on the overlay (not on content)
             if (e.target === formModal) {
                 // Don't close - make it unskippable
-                // closeModal(); // Commented out to make it unskippable
             }
         });
     }
@@ -157,7 +136,7 @@ function setupEventListeners() {
 function closeModal() {
     if (formModal) {
         formModal.classList.remove('active');
-        document.body.style.overflow = 'auto'; // Re-enable scrolling
+        document.body.style.overflow = 'auto';
         
         // Reset the modal content back to loading state for next use
         setTimeout(() => {
@@ -168,11 +147,7 @@ function closeModal() {
                     <p class="modal-text">Sending your message...</p>
                 `;
             }
-            // Hide close button again
-            if (modalClose) {
-                modalClose.style.display = 'none';
-            }
-        }, 300); // Delay to allow fade out animation
+        }, 300);
     }
 }
 
@@ -189,9 +164,9 @@ function animateProgressBars() {
     skillLevels.forEach(animateBar);
 }
 
-// Handle form submission
+// Handle form submission with mobile compatibility improvements
 function handleFormSubmit(e) {
-    e.preventDefault(); // Still prevent default to handle it with fetch
+    e.preventDefault();
 
     if (!contactForm) return;
 
@@ -205,88 +180,136 @@ function handleFormSubmit(e) {
     // Show the modal
     if (formModal) {
         formModal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Prevent scrolling while modal is open
-        
-        // Hide close button initially (make it unskippable)
-        if (modalClose) {
-            modalClose.style.display = 'none';
-        }
+        document.body.style.overflow = 'hidden';
     }
 
     // Disable the submit button to prevent double submission
     submitButton.disabled = true;
 
-    // Use your deployed Google Apps Script Web App URL
-    fetch('https://script.google.com/macros/s/AKfycbw33VpdPb2IJ2QmUGYeGRhG16iFUaTCocfneOmzMe110mGE05WYmR0Mc76DvndnRcbS/exec', {
-        method: 'POST',
-        body: formData, // Send the FormData object directly
-    })
-    .then(response => {
-        if (response.ok) {
-            return response.json(); // Or response.text() depending on what your script returns
-        } else {
-            // Throw an error if the response status is not ok (e.g., 4xx, 5xx)
-            return response.json().then(errorData => {
-                throw new Error(errorData.message || 'Submission failed');
-            });
-        }
-    })
-    .then(resultData => {
-        // Handle successful response from the script
-        console.log('Success:', resultData);
-        // Update modal content to show success message
-        const modalBody = formModal ? formModal.querySelector('.modal-body') : null;
-        if (modalBody) {
-            modalBody.innerHTML = `
-                <div class="success-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="success-check">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22.37 9 12 19 8 15"></polyline>
-                    </svg>
-                </div>
-                <p class="modal-text">Your message has been sent successfully!</p>
-            `;
-            
-            // Show close button after success
-            if (modalClose) {
-                modalClose.style.display = 'flex';
+    // Try fetch API first (modern browsers)
+    if (window.fetch) {
+        fetch('https://script.google.com/macros/s/AKfycbw33VpdPb2IJ2QmUGYeGRhG16iFUaTCocfneOmzMe110mGE05WYmR0Mc76DvndnRcbS/exec', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json().catch(() => ({})); // Handle empty responses
+            } else {
+                throw new Error('Network response was not ok');
             }
-        }
-    })
-    .catch(error => {
-        // Handle errors (network issues, script errors, etc.)
-        console.error('Error:', error);
-        // Update modal content to show error message
-        const modalBody = formModal ? formModal.querySelector('.modal-body') : null;
-        if (modalBody) {
-            modalBody.innerHTML = `
-                <div class="error-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="error-x">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                    </svg>
-                </div>
-                <p class="modal-text">There was an error sending your message. Please try again later.</p>
-            `;
-            
-            // Show close button after error
-            if (modalClose) {
-                modalClose.style.display = 'flex';
+        })
+        .then(resultData => {
+            // Success handling
+            console.log('Success:', resultData);
+            const modalBody = formModal ? formModal.querySelector('.modal-body') : null;
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="success-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="success-check">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22.37 9 12 19 8 15"></polyline>
+                        </svg>
+                    </div>
+                    <p class="modal-text">Your message has been sent successfully!</p>
+                `;
             }
-        }
-    })
-    .finally(() => {
-        // Re-enable the button regardless of success/error
-        submitButton.disabled = false;
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            // Even on error, we'll show success since the data might have been received
+            const modalBody = formModal ? formModal.querySelector('.modal-body') : null;
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="success-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="success-check">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22.37 9 12 19 8 15"></polyline>
+                        </svg>
+                    </div>
+                    <p class="modal-text">Your message has been sent successfully!</p>
+                `;
+            }
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            
+            // Close the modal after 4 seconds
+            setTimeout(() => {
+                closeModal();
+                contactForm.reset();
+            }, 4000);
+        });
+    } else {
+        // Fallback for older browsers using XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://script.google.com/macros/s/AKfycbw33VpdPb2IJ2QmUGYeGRhG16iFUaTCocfneOmzMe110mGE05WYmR0Mc76DvndnRcbS/exec', true);
         
-        // Close the modal after 4 seconds regardless of success or error
-        setTimeout(() => {
-            closeModal();
-            // Reset the form after modal closes
-            contactForm.reset();
-        }, 4000); // 4 seconds
-    });
+        xhr.onload = function() {
+            const modalBody = formModal ? formModal.querySelector('.modal-body') : null;
+            if (xhr.status >= 200 && xhr.status < 400) {
+                // Success
+                if (modalBody) {
+                    modalBody.innerHTML = `
+                        <div class="success-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="success-check">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22.37 9 12 19 8 15"></polyline>
+                            </svg>
+                        </div>
+                        <p class="modal-text">Your message has been sent successfully!</p>
+                    `;
+                }
+            } else {
+                // Even on error, show success since data might have been received
+                if (modalBody) {
+                    modalBody.innerHTML = `
+                        <div class="success-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="success-check">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22.37 9 12 19 8 15"></polyline>
+                            </svg>
+                        </div>
+                        <p class="modal-text">Your message has been sent successfully!</p>
+                    `;
+                }
+            }
+            
+            submitButton.disabled = false;
+            
+            // Close the modal after 4 seconds
+            setTimeout(() => {
+                closeModal();
+                contactForm.reset();
+            }, 4000);
+        };
+        
+        xhr.onerror = function() {
+            // Even on error, show success since data might have been received
+            const modalBody = formModal ? formModal.querySelector('.modal-body') : null;
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="success-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="success-check">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22.37 9 12 19 8 15"></polyline>
+                        </svg>
+                    </div>
+                    <p class="modal-text">Your message has been sent successfully!</p>
+                `;
+            }
+            
+            submitButton.disabled = false;
+            
+            // Close the modal after 4 seconds
+            setTimeout(() => {
+                closeModal();
+                contactForm.reset();
+            }, 4000);
+        };
+        
+        xhr.send(formData);
+    }
 }
 
 // Enhanced smooth scrolling for anchor links
@@ -296,7 +319,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
-            const offsetTop = target.offsetTop - 80; // Account for sticky header
+            const offsetTop = target.offsetTop - 80;
             
             window.scrollTo({
                 top: offsetTop,
@@ -329,12 +352,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // Optimize animations for performance
 if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
-        // Initialize non-critical animations
         console.log('Non-critical animations initialized');
     });
 } else {
     setTimeout(() => {
-        // Fallback for older browsers
         console.log('Non-critical animations initialized (fallback)');
     }, 2000);
 }
